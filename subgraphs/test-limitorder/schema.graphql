@@ -1,0 +1,156 @@
+type AllowTransfer @entity(immutable: true) {
+  id: Bytes!
+  spender: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type DepositETH @entity(immutable: true) {
+  id: Bytes!
+  ethBalance: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type DisallowTransfer @entity(immutable: true) {
+  id: Bytes!
+  spender: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type FactorsUpdated @entity(immutable: true) {
+  id: Bytes!
+  makerFeeFactor: Int! # uint16
+  takerFeeFactor: Int! # uint16
+  profitFeeFactor: Int! # uint16
+  profitCapFactor: Int! # uint16
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type LimitOrderFilledByProtocol @entity(immutable: true) {
+  id: Bytes!
+  orderHash: Bytes! # bytes32
+  maker: Bytes! # address
+  taker: Bytes! # address
+  allowFillHash: Bytes! # bytes32
+  relayer: Bytes! # address
+  profitRecipient: Bytes! # address
+  fillReceipt_makerToken: Bytes! # address
+  fillReceipt_takerToken: Bytes! # address
+  fillReceipt_makerTokenFilledAmount: BigInt! # uint256
+  fillReceipt_takerTokenFilledAmount: BigInt! # uint256
+  fillReceipt_remainingAmount: BigInt! # uint256
+  fillReceipt_makerTokenFee: BigInt! # uint256
+  fillReceipt_takerTokenFee: BigInt! # uint256
+  takerTokenProfit: BigInt! # uint256
+  takerTokenProfitFee: BigInt! # uint256
+  takerTokenProfitBackToMaker: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type LimitOrderFilledByTrader @entity(immutable: true) {
+  id: Bytes!
+  orderHash: Bytes! # bytes32
+  maker: Bytes! # address
+  taker: Bytes! # address
+  allowFillHash: Bytes! # bytes32
+  recipient: Bytes! # address
+  fillReceipt_makerToken: Bytes! # address
+  fillReceipt_takerToken: Bytes! # address
+  fillReceipt_makerTokenFilledAmount: BigInt! # uint256
+  fillReceipt_takerTokenFilledAmount: BigInt! # uint256
+  fillReceipt_remainingAmount: BigInt! # uint256
+  fillReceipt_makerTokenFee: BigInt! # uint256
+  fillReceipt_takerTokenFee: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type OrderCancelled @entity(immutable: true) {
+  id: Bytes!
+  orderHash: Bytes! # bytes32
+  maker: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type SetFeeCollector @entity(immutable: true) {
+  id: Bytes!
+  newFeeCollector: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type TransferOwnership @entity(immutable: true) {
+  id: Bytes!
+  newOperator: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type UpgradeCoordinator @entity(immutable: true) {
+  id: Bytes!
+  newCoordinator: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type UpgradeSpender @entity(immutable: true) {
+  id: Bytes!
+  newSpender: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+enum OrderTypes {
+  ByProtocol
+  ByTrader
+  ByProtocolSpecifyTaker
+  ByTraderSpecifyTaker
+}
+
+type Order @entity(immutable: true) {
+  id: ID! # orderHash
+  makerToken: Bytes! # address
+  takerToken: Bytes! # address
+  maker: Bytes! # address
+  # taker: Bytes! # address # 目前的 event 無法得知 maker 是否有指定 taker
+  limitOrderFilled: [LimitOrderFilled!]! @derivedFrom(field: "order")
+  cancelled: Boolean!
+}
+
+type LimitOrderFilled @entity(immutable: true) {
+  id: ID!
+  order: Order!
+  orderType: OrderTypes!
+  taker: Bytes! # address
+  allowFillHash: Bytes! # bytes32
+  makerTokenFilledAmount: BigInt! # uint256
+  takerTokenFilledAmount: BigInt! # uint256
+  remainingAmount: BigInt! # uint256
+  makerTokenFee: BigInt! # uint256
+  takerTokenFee: BigInt! # uint256
+  recipient: Bytes! # address # only byTrader
+  relayer: Bytes! # address # only byProtocol
+  profitRecipient: Bytes! # address # only byProtocol
+  takerTokenProfit: BigInt! # uint256 # only byProtocol
+  takerTokenProfitFee: BigInt! # uint256 # only byProtocol
+  takerTokenProfitBackToMaker: BigInt! # uint256 # only byProtocol
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

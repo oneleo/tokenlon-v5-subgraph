@@ -1,0 +1,53 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: LimitOrder
+    network: goerli
+    source:
+      address: "0x7B955545428B3a0E7520EEfF0DC30D740F290e4b"
+      abi: LimitOrder
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - AllowTransfer
+        - DepositETH
+        - DisallowTransfer
+        - FactorsUpdated
+        - LimitOrderFilledByProtocol
+        - LimitOrderFilledByTrader
+        - OrderCancelled
+        - SetFeeCollector
+        - TransferOwnership
+        - UpgradeCoordinator
+        - UpgradeSpender
+      abis:
+        - name: LimitOrder
+          file: ./abis/LimitOrder.json
+      eventHandlers:
+        - event: AllowTransfer(address)
+          handler: handleAllowTransfer
+        - event: DepositETH(uint256)
+          handler: handleDepositETH
+        - event: DisallowTransfer(address)
+          handler: handleDisallowTransfer
+        - event: FactorsUpdated(uint16,uint16,uint16,uint16)
+          handler: handleFactorsUpdated
+        - event: LimitOrderFilledByProtocol(indexed bytes32,indexed address,indexed address,bytes32,address,address,(address,address,uint256,uint256,uint256,uint256,uint256),uint256,uint256,uint256)
+          handler: handleLimitOrderFilledByProtocol
+        - event: LimitOrderFilledByTrader(indexed bytes32,indexed address,indexed address,bytes32,address,(address,address,uint256,uint256,uint256,uint256,uint256))
+          handler: handleLimitOrderFilledByTrader
+        - event: OrderCancelled(bytes32,address)
+          handler: handleOrderCancelled
+        - event: SetFeeCollector(address)
+          handler: handleSetFeeCollector
+        - event: TransferOwnership(address)
+          handler: handleTransferOwnership
+        - event: UpgradeCoordinator(address)
+          handler: handleUpgradeCoordinator
+        - event: UpgradeSpender(address)
+          handler: handleUpgradeSpender
+      file: ./src/limit-order.ts
