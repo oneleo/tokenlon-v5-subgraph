@@ -1,4 +1,4 @@
-import { BigInt, BigDecimal, ethereum, Address, Bytes } from '@graphprotocol/graph-ts'
+import { BigInt, BigDecimal, ethereum, Address, Bytes, bigInt } from '@graphprotocol/graph-ts'
 import {
   AllowTransfer as AllowTransferEvent,
   DepositETH as DepositETHEvent,
@@ -100,46 +100,73 @@ export function handleLimitOrderFilledByProtocol(event: LimitOrderFilledByProtoc
 
   entity.save()
 
-  // Set order ID
+  // Get the order ID
   const orderId = event.params.orderHash.toHex()
+  // Get this (= LimitOrderFilledByProtocolEvent) event ID
+  const thisEventId = getEventID(event)
 
-  // Set this event ID
-  let thisEventId = getEventID(event)
-
-  // Create Order Entity
-  let orderEntity = OrderEntity.load(event.params.orderHash.toHex())
+  // Load or create Order entity
+  let orderEntity = OrderEntity.load(orderId)
   if (orderEntity == null) {
-    orderEntity = new OrderEntity(event.params.orderHash.toHex())
+    orderEntity = new OrderEntity(orderId)
 
     orderEntity.makerToken = event.params.fillReceipt.makerToken
     orderEntity.takerToken = event.params.fillReceipt.takerToken
     orderEntity.maker = event.params.maker
     // orderEntity.taker = event.params.taker
     orderEntity.cancelled = false
+    orderEntity.filled = false
 
-    let limitOrderFilledArray = new Array<string>(0)
+    // Set relationship with limitOrderFilled entity
+    // References:
+    // Update array: https://thegraph.com/docs/en/developing/assemblyscript-api/#updating-existing-entities
+    // Entity relationships: https://thegraph.com/docs/en/developing/creating-a-subgraph/#entity-relationships
+    const limitOrderFilledArray = new Array<string>(0)
     limitOrderFilledArray.push(thisEventId)
     orderEntity.limitOrderFilled = limitOrderFilledArray
+  } else {
+    const limitOrderFilledArray = orderEntity.limitOrderFilled
+    limitOrderFilledArray.push(thisEventId)
+    orderEntity.limitOrderFilled = limitOrderFilledArray
+    // This order is filled after this LimitOrderFilledByProtocol event
+    if (event.params.fillReceipt.remainingAmount === BigInt.fromI32(0)) {
+      orderEntity.filled = true
+    }
   }
 
-  // Create LimitOrderFilled Entity
+  // Load or create LimitOrderFilled entity
   let limitOrderFilledEntity = LimitOrderFilledEntity.load(thisEventId)
   if (limitOrderFilledEntity == null) {
     limitOrderFilledEntity = new LimitOrderFilledEntity(thisEventId)
-    limitOrderFilledEntity.order = orderId
-    limitOrderFilledEntity.taker = event.params.taker
 
-    // if (orderEntity.taker == Address.fromString('0x0')) {
-    //   limitOrderFilledEntity.orderType = 'ByProtocol'
-    // } else {
-    //   limitOrderFilledEntity.orderType = 'ByProtocolSpecifyTaker'
-    // }
+    limitOrderFilledEntity.order = orderId
+    limitOrderFilledEntity.orderType = 'ByProtocol'
+    limitOrderFilledEntity.maker = event.params.maker as Bytes
+    limitOrderFilledEntity.taker = event.params.taker as Bytes
+    limitOrderFilledEntity.makerToken = event.params.fillReceipt.makerToken as Bytes
+    limitOrderFilledEntity.takerToken = event.params.fillReceipt.takerToken as Bytes
+    limitOrderFilledEntity.allowFillHash = event.params.allowFillHash
+    limitOrderFilledEntity.makerTokenFilledAmount = event.params.fillReceipt.makerTokenFilledAmount
+    limitOrderFilledEntity.takerTokenFilledAmount = event.params.fillReceipt.takerTokenFilledAmount
+    limitOrderFilledEntity.remainingAmount = event.params.fillReceipt.remainingAmount
+    limitOrderFilledEntity.makerTokenFee = event.params.fillReceipt.makerTokenFee
+    limitOrderFilledEntity.takerTokenFee = event.params.fillReceipt.takerTokenFee
+    limitOrderFilledEntity.relayer = event.params.relayer as Bytes
+    limitOrderFilledEntity.profitRecipient = event.params.profitRecipient as Bytes
+    limitOrderFilledEntity.takerTokenProfit = event.params.takerTokenProfit
+    limitOrderFilledEntity.takerTokenProfitFee = event.params.takerTokenProfitFee
+    limitOrderFilledEntity.takerTokenProfitBackToMaker = event.params.takerTokenProfitBackToMaker
+    // recipient is only set by the LimitOrderFilledByTrader event
+    limitOrderFilledEntity.recipient = Address.fromString('0x0000000000000000000000000000000000000000') as Bytes
+
+    limitOrderFilledEntity.blockNumber = event.block.number
+    limitOrderFilledEntity.blockTimestamp = event.block.timestamp
+    limitOrderFilledEntity.transactionHash = event.transaction.hash
   }
 
-  // https://thegraph.com/docs/en/developing/assemblyscript-api/#updating-existing-entities
-  let limitOrderFilledArray = orderEntity.limitOrderFilled
-  limitOrderFilledArray.push(thisEventId)
-  orderEntity.limitOrderFilled = limitOrderFilledArray
+  // Save Entity
+  orderEntity.save()
+  limitOrderFilledEntity.save()
 }
 
 export function handleLimitOrderFilledByTrader(event: LimitOrderFilledByTraderEvent): void {
@@ -162,6 +189,75 @@ export function handleLimitOrderFilledByTrader(event: LimitOrderFilledByTraderEv
   entity.transactionHash = event.transaction.hash
 
   entity.save()
+
+  // Get the order ID
+  const orderId = event.params.orderHash.toHex()
+  // Get this (= LimitOrderFilledByProtocolEvent) event ID
+  const thisEventId = getEventID(event)
+
+  // Load or create Order entity
+  let orderEntity = OrderEntity.load(orderId)
+  if (orderEntity == null) {
+    orderEntity = new OrderEntity(orderId)
+
+    orderEntity.makerToken = event.params.fillReceipt.makerToken
+    orderEntity.takerToken = event.params.fillReceipt.takerToken
+    orderEntity.maker = event.params.maker
+    // orderEntity.taker = event.params.taker
+    orderEntity.cancelled = false
+    orderEntity.filled = false
+
+    // Set relationship with limitOrderFilled entity
+    // References:
+    // Update array: https://thegraph.com/docs/en/developing/assemblyscript-api/#updating-existing-entities
+    // Entity relationships: https://thegraph.com/docs/en/developing/creating-a-subgraph/#entity-relationships
+    const limitOrderFilledArray = new Array<string>(0)
+    limitOrderFilledArray.push(thisEventId)
+    orderEntity.limitOrderFilled = limitOrderFilledArray
+  } else {
+    const limitOrderFilledArray = orderEntity.limitOrderFilled
+    limitOrderFilledArray.push(thisEventId)
+    orderEntity.limitOrderFilled = limitOrderFilledArray
+    // This order is filled after this LimitOrderFilledByProtocol event
+    if (event.params.fillReceipt.remainingAmount === BigInt.fromI32(0)) {
+      orderEntity.filled = true
+    }
+  }
+
+  // Load or create LimitOrderFilled entity
+  let limitOrderFilledEntity = LimitOrderFilledEntity.load(thisEventId)
+  if (limitOrderFilledEntity == null) {
+    limitOrderFilledEntity = new LimitOrderFilledEntity(thisEventId)
+
+    limitOrderFilledEntity.order = orderId
+    limitOrderFilledEntity.orderType = 'ByProtocol'
+    limitOrderFilledEntity.maker = event.params.maker as Bytes
+    limitOrderFilledEntity.taker = event.params.taker as Bytes
+    limitOrderFilledEntity.makerToken = event.params.fillReceipt.makerToken as Bytes
+    limitOrderFilledEntity.takerToken = event.params.fillReceipt.takerToken as Bytes
+    limitOrderFilledEntity.allowFillHash = event.params.allowFillHash
+    limitOrderFilledEntity.makerTokenFilledAmount = event.params.fillReceipt.makerTokenFilledAmount
+    limitOrderFilledEntity.takerTokenFilledAmount = event.params.fillReceipt.takerTokenFilledAmount
+    limitOrderFilledEntity.remainingAmount = event.params.fillReceipt.remainingAmount
+    limitOrderFilledEntity.makerTokenFee = event.params.fillReceipt.makerTokenFee
+    limitOrderFilledEntity.takerTokenFee = event.params.fillReceipt.takerTokenFee
+    limitOrderFilledEntity.recipient = event.params.recipient as Bytes //
+    // relayer, profitRecipient, takerTokenProfit, takerTokenProfitFee, takerTokenProfitBackToMaker
+    // are only set by the LimitOrderFilledByProtocol event
+    limitOrderFilledEntity.relayer = Address.fromString('0x0000000000000000000000000000000000000000') as Bytes
+    limitOrderFilledEntity.profitRecipient = Address.fromString('0x0000000000000000000000000000000000000000') as Bytes
+    limitOrderFilledEntity.takerTokenProfit = BigInt.fromI32(0)
+    limitOrderFilledEntity.takerTokenProfitFee = BigInt.fromI32(0)
+    limitOrderFilledEntity.takerTokenProfitBackToMaker = BigInt.fromI32(0)
+
+    limitOrderFilledEntity.blockNumber = event.block.number
+    limitOrderFilledEntity.blockTimestamp = event.block.timestamp
+    limitOrderFilledEntity.transactionHash = event.transaction.hash
+  }
+
+  // Save Entity
+  orderEntity.save()
+  limitOrderFilledEntity.save()
 }
 
 export function handleOrderCancelled(event: OrderCancelledEvent): void {

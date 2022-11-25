@@ -119,25 +119,27 @@ type UpgradeSpender @entity(immutable: true) {
 enum OrderTypes {
   ByProtocol
   ByTrader
-  ByProtocolSpecifyTaker
-  ByTraderSpecifyTaker
 }
 
-type Order @entity(immutable: true) {
+type Order @entity(immutable: false) {
   id: ID! # orderHash
   makerToken: Bytes! # address
   takerToken: Bytes! # address
   maker: Bytes! # address
   # taker: Bytes! # address # 目前的 event 無法得知 maker 是否有指定 taker
   limitOrderFilled: [LimitOrderFilled!]! @derivedFrom(field: "order")
-  cancelled: Boolean!
+  cancelled: Boolean! # 是否被取消
+  filled: Boolean! # 是否已被 Fill 完畢
 }
 
 type LimitOrderFilled @entity(immutable: true) {
   id: ID!
   order: Order!
   orderType: OrderTypes!
+  maker: Bytes! # address
   taker: Bytes! # address
+  makerToken: Bytes! # address
+  takerToken: Bytes! # address
   allowFillHash: Bytes! # bytes32
   makerTokenFilledAmount: BigInt! # uint256
   takerTokenFilledAmount: BigInt! # uint256
