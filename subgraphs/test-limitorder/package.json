@@ -1,6 +1,8 @@
 {
   "name": "test-limitorder",
-  "license": "UNLICENSED",
+  "version": "0.0.1",
+  "license": "MIT",
+  "author": "consenlabs",
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",
@@ -8,11 +10,8 @@
     "create-local": "graph create --node http://localhost:8020/ test-limitorder",
     "remove-local": "graph remove --node http://localhost:8020/ test-limitorder",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 test-limitorder",
-    "test": "graph test"
-  },
-  "dependencies": {
-    "@graphprotocol/graph-cli": "0.36.1",
-    "@graphprotocol/graph-ts": "0.28.1"
-  },
-  "devDependencies": { "matchstick-as": "0.5.0" }
+    "test": "graph test",
+    "prepare:mainnet": "",
+    "prepare:goerli": ""
+  }
 }

@@ -1,4 +1,4 @@
-import { BigInt, BigDecimal, ethereum, Address, Bytes, bigInt } from '@graphprotocol/graph-ts'
+import { BigInt, ethereum, Address, Bytes, log } from '@graphprotocol/graph-ts'
 import {
   AllowTransfer as AllowTransferEvent,
   DepositETH as DepositETHEvent,
@@ -123,14 +123,16 @@ export function handleLimitOrderFilledByProtocol(event: LimitOrderFilledByProtoc
     // Entity relationships: https://thegraph.com/docs/en/developing/creating-a-subgraph/#entity-relationships
     const limitOrderFilledArray = new Array<string>(0)
     limitOrderFilledArray.push(thisEventId)
-    orderEntity.limitOrderFilled = limitOrderFilledArray
+    orderEntity.limitOrderFilledId = limitOrderFilledArray
   } else {
-    const limitOrderFilledArray = orderEntity.limitOrderFilled
+    const limitOrderFilledArray = orderEntity.limitOrderFilledId
     limitOrderFilledArray.push(thisEventId)
-    orderEntity.limitOrderFilled = limitOrderFilledArray
+    orderEntity.limitOrderFilledId = limitOrderFilledArray
     // This order is filled after this LimitOrderFilledByProtocol event
     if (event.params.fillReceipt.remainingAmount === BigInt.fromI32(0)) {
       orderEntity.filled = true
+
+      log.warning('Order entity is filled, the remainingAmount = {}', [event.params.fillReceipt.remainingAmount.toString()])
     }
   }
 
@@ -139,7 +141,7 @@ export function handleLimitOrderFilledByProtocol(event: LimitOrderFilledByProtoc
   if (limitOrderFilledEntity == null) {
     limitOrderFilledEntity = new LimitOrderFilledEntity(thisEventId)
 
-    limitOrderFilledEntity.order = orderId
+    limitOrderFilledEntity.orderId = orderId
     limitOrderFilledEntity.orderType = 'ByProtocol'
     limitOrderFilledEntity.maker = event.params.maker as Bytes
     limitOrderFilledEntity.taker = event.params.taker as Bytes
@@ -163,6 +165,8 @@ export function handleLimitOrderFilledByProtocol(event: LimitOrderFilledByProtoc
     limitOrderFilledEntity.blockTimestamp = event.block.timestamp
     limitOrderFilledEntity.transactionHash = event.transaction.hash
   }
+
+  log.warning("LimitOrderFilled 'ByProtocol' Event at transaction hash: {}, Order entity id: {}, LimitOrderFilled entity id: {}", [event.transaction.hash.toHex(), orderEntity.id, limitOrderFilledEntity.id])
 
   // Save Entity
   orderEntity.save()
@@ -213,14 +217,16 @@ export function handleLimitOrderFilledByTrader(event: LimitOrderFilledByTraderEv
     // Entity relationships: https://thegraph.com/docs/en/developing/creating-a-subgraph/#entity-relationships
     const limitOrderFilledArray = new Array<string>(0)
     limitOrderFilledArray.push(thisEventId)
-    orderEntity.limitOrderFilled = limitOrderFilledArray
+    orderEntity.limitOrderFilledId = limitOrderFilledArray
   } else {
-    const limitOrderFilledArray = orderEntity.limitOrderFilled
+    const limitOrderFilledArray = orderEntity.limitOrderFilledId
     limitOrderFilledArray.push(thisEventId)
-    orderEntity.limitOrderFilled = limitOrderFilledArray
+    orderEntity.limitOrderFilledId = limitOrderFilledArray
     // This order is filled after this LimitOrderFilledByProtocol event
     if (event.params.fillReceipt.remainingAmount === BigInt.fromI32(0)) {
       orderEntity.filled = true
+
+      log.warning('Order entity is filled, the remainingAmount = {}', [event.params.fillReceipt.remainingAmount.toString()])
     }
   }
 
@@ -229,8 +235,8 @@ export function handleLimitOrderFilledByTrader(event: LimitOrderFilledByTraderEv
   if (limitOrderFilledEntity == null) {
     limitOrderFilledEntity = new LimitOrderFilledEntity(thisEventId)
 
-    limitOrderFilledEntity.order = orderId
-    limitOrderFilledEntity.orderType = 'ByProtocol'
+    limitOrderFilledEntity.orderId = orderId
+    limitOrderFilledEntity.orderType = 'ByTrader'
     limitOrderFilledEntity.maker = event.params.maker as Bytes
     limitOrderFilledEntity.taker = event.params.taker as Bytes
     limitOrderFilledEntity.makerToken = event.params.fillReceipt.makerToken as Bytes
@@ -241,7 +247,7 @@ export function handleLimitOrderFilledByTrader(event: LimitOrderFilledByTraderEv
     limitOrderFilledEntity.remainingAmount = event.params.fillReceipt.remainingAmount
     limitOrderFilledEntity.makerTokenFee = event.params.fillReceipt.makerTokenFee
     limitOrderFilledEntity.takerTokenFee = event.params.fillReceipt.takerTokenFee
-    limitOrderFilledEntity.recipient = event.params.recipient as Bytes //
+    limitOrderFilledEntity.recipient = event.params.recipient as Bytes
     // relayer, profitRecipient, takerTokenProfit, takerTokenProfitFee, takerTokenProfitBackToMaker
     // are only set by the LimitOrderFilledByProtocol event
     limitOrderFilledEntity.relayer = Address.fromString('0x0000000000000000000000000000000000000000') as Bytes
@@ -254,6 +260,8 @@ export function handleLimitOrderFilledByTrader(event: LimitOrderFilledByTraderEv
     limitOrderFilledEntity.blockTimestamp = event.block.timestamp
     limitOrderFilledEntity.transactionHash = event.transaction.hash
   }
+
+  log.warning("LimitOrderFilled 'ByTrader' Event at transaction hash: {}, Order entity id: {}, LimitOrderFilled entity id: {}", [event.transaction.hash.toHex(), orderEntity.id, limitOrderFilledEntity.id])
 
   // Save Entity
   orderEntity.save()
@@ -271,10 +279,12 @@ export function handleOrderCancelled(event: OrderCancelledEvent): void {
 
   entity.save()
 
-  // Set Order Entity
+  // Set order entity to be cancelled
   let orderEntity = OrderEntity.load(event.params.orderHash.toHex())
-  if (orderEntity !== null) {
-    orderEntity.cancelled = false
+  if (orderEntity != null) {
+    orderEntity.cancelled = true
+
+    log.warning('Order entity is cancelled by cancelLimitOrder() method at transaction hash: ', [event.transaction.hash.toHex()])
   }
 }
 
