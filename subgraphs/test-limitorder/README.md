@@ -79,3 +79,37 @@ Queries (HTTP):     https://api.studio.thegraph.com/query/34764/test-limitorder/
 ✨  Done in 40.66s.
 ✨  Done in 40.80s.
 ```
+
+## Try GraphQL in Subgraph Playground
+
+:notebook: Created by GraphQL Explorer in Subgraph Playground
+
+```graphql
+query MyQuery {
+  orders(orderBy: firstFilledTime, first: 3) {
+    id
+    maker
+    makerToken
+    takerToken
+    makerTokenAmount
+    takerTokenAmount
+    firstFilledTime
+    lastFilledOrCancelledTime
+    filled
+    cancelled
+  }
+  limitOrderFilleds(orderBy: blockTimestamp, first: 3) {
+    id
+    makerTokenFilledAmount
+    takerTokenFilledAmount
+    blockTimestamp
+  }
+  limitOrderFilledByProtocols(orderBy: blockTimestamp, first: 3) {
+    id
+    fillReceipt_makerTokenFilledAmount
+    fillReceipt_takerTokenFilledAmount
+    fillReceipt_remainingAmount
+    blockTimestamp
+  }
+}
+```

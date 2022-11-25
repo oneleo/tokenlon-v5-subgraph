@@ -116,6 +116,8 @@ export function handleLimitOrderFilledByProtocol(event: LimitOrderFilledByProtoc
     // orderEntity.taker = event.params.taker
     orderEntity.cancelled = false
     orderEntity.filled = false
+    orderEntity.firstFilledTime = event.block.timestamp
+    orderEntity.lastFilledOrCancelledTime = event.block.timestamp
 
     // Set relationship with limitOrderFilled entity
     // References:
@@ -124,14 +126,25 @@ export function handleLimitOrderFilledByProtocol(event: LimitOrderFilledByProtoc
     const limitOrderFilledArray = new Array<string>(0)
     limitOrderFilledArray.push(thisEventId)
     orderEntity.limitOrderFilledId = limitOrderFilledArray
+
+    // 回推 order.takerTokenAmount 及 order.makerTokenAmount 值
+    orderEntity.takerTokenAmount = event.params.fillReceipt.takerTokenFilledAmount.plus(event.params.fillReceipt.remainingAmount)
+    orderEntity.makerTokenAmount = orderEntity.takerTokenAmount.times(event.params.fillReceipt.makerTokenFilledAmount).div(event.params.fillReceipt.takerTokenFilledAmount)
+
+    // 第一次被 Fill 就結單
+    // This order is filled after this LimitOrderFilledByProtocol event
+    if (event.params.fillReceipt.remainingAmount.equals(BigInt.fromI32(0))) {
+      orderEntity.filled = true
+      log.warning('Order entity is filled, the remainingAmount = {}', [event.params.fillReceipt.remainingAmount.toString()])
+    }
   } else {
     const limitOrderFilledArray = orderEntity.limitOrderFilledId
     limitOrderFilledArray.push(thisEventId)
     orderEntity.limitOrderFilledId = limitOrderFilledArray
+    orderEntity.lastFilledOrCancelledTime = event.block.timestamp
     // This order is filled after this LimitOrderFilledByProtocol event
-    if (event.params.fillReceipt.remainingAmount === BigInt.fromI32(0)) {
+    if (event.params.fillReceipt.remainingAmount.equals(BigInt.fromI32(0))) {
       orderEntity.filled = true
-
       log.warning('Order entity is filled, the remainingAmount = {}', [event.params.fillReceipt.remainingAmount.toString()])
     }
   }
@@ -210,6 +223,8 @@ export function handleLimitOrderFilledByTrader(event: LimitOrderFilledByTraderEv
     // orderEntity.taker = event.params.taker
     orderEntity.cancelled = false
     orderEntity.filled = false
+    orderEntity.firstFilledTime = event.block.timestamp
+    orderEntity.lastFilledOrCancelledTime = event.block.timestamp
 
     // Set relationship with limitOrderFilled entity
     // References:
@@ -218,14 +233,25 @@ export function handleLimitOrderFilledByTrader(event: LimitOrderFilledByTraderEv
     const limitOrderFilledArray = new Array<string>(0)
     limitOrderFilledArray.push(thisEventId)
     orderEntity.limitOrderFilledId = limitOrderFilledArray
+
+    // 回推 order.takerTokenAmount 及 order.makerTokenAmount 值
+    orderEntity.takerTokenAmount = event.params.fillReceipt.takerTokenFilledAmount.plus(event.params.fillReceipt.remainingAmount)
+    orderEntity.makerTokenAmount = orderEntity.takerTokenAmount.times(event.params.fillReceipt.makerTokenFilledAmount).div(event.params.fillReceipt.takerTokenFilledAmount)
+
+    // 第一次被 Fill 就結單
+    // This order is filled after this LimitOrderFilledByProtocol event
+    if (event.params.fillReceipt.remainingAmount.equals(BigInt.fromI32(0))) {
+      orderEntity.filled = true
+      log.warning('Order entity is filled, the remainingAmount = {}', [event.params.fillReceipt.remainingAmount.toString()])
+    }
   } else {
     const limitOrderFilledArray = orderEntity.limitOrderFilledId
     limitOrderFilledArray.push(thisEventId)
     orderEntity.limitOrderFilledId = limitOrderFilledArray
+    orderEntity.lastFilledOrCancelledTime = event.block.timestamp
     // This order is filled after this LimitOrderFilledByProtocol event
-    if (event.params.fillReceipt.remainingAmount === BigInt.fromI32(0)) {
+    if (event.params.fillReceipt.remainingAmount.equals(BigInt.fromI32(0))) {
       orderEntity.filled = true
-
       log.warning('Order entity is filled, the remainingAmount = {}', [event.params.fillReceipt.remainingAmount.toString()])
     }
   }
@@ -283,8 +309,9 @@ export function handleOrderCancelled(event: OrderCancelledEvent): void {
   let orderEntity = OrderEntity.load(event.params.orderHash.toHex())
   if (orderEntity != null) {
     orderEntity.cancelled = true
-
+    orderEntity.lastFilledOrCancelledTime = event.block.timestamp
     log.warning('Order entity is cancelled by cancelLimitOrder() method at transaction hash: ', [event.transaction.hash.toHex()])
+    orderEntity.save()
   }
 }
 
