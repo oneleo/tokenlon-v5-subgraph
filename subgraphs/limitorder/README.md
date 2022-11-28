@@ -34,9 +34,9 @@ Compile (Goerli Testnet)
 ## Compile and deploy for LimitOrder contract only in Goerli Testnet
 
 ```shell
-% yarn workspace "test-limitorder" run codegen
-% yarn workspace "test-limitorder" run build
-% yarn workspace "test-limitorder" run graph deploy --studio test-limitorder
+% yarn workspace "limitorder" run codegen
+% yarn workspace "limitorder" run build
+% yarn workspace "limitorder" run graph deploy --studio limitorder
 ```
 
 Output:
@@ -44,7 +44,7 @@ Output:
 ```shell
 yarn workspace v1.22.19
 yarn run v1.22.19
-$ /Users/irara/MyGithubOneleo/tokenlon-v5-subgraph/node_modules/.bin/graph deploy --studio test-limitorder
+$ /Users/irara/MyGithubOneleo/tokenlon-v5-subgraph/node_modules/.bin/graph deploy --studio limitorder
 ✔ Version Label (e.g. v0.0.1) · v0.0.1
   Skip migration: Bump mapping apiVersion from 0.0.1 to 0.0.2
   Skip migration: Bump mapping apiVersion from 0.0.2 to 0.0.3
@@ -71,10 +71,10 @@ $ /Users/irara/MyGithubOneleo/tokenlon-v5-subgraph/node_modules/.bin/graph deplo
 
 Build completed: QmYigtJzraLhczyemJtNVsUDBpCw741cKajvuUZNVmKUDC
 
-Deployed to https://thegraph.com/studio/subgraph/test-limitorder
+Deployed to https://thegraph.com/studio/subgraph/limitorder
 
 Subgraph endpoints:
-Queries (HTTP):     https://api.studio.thegraph.com/query/34764/test-limitorder/v0.0.1
+Queries (HTTP):     https://api.studio.thegraph.com/query/34764/limitorder/v0.0.1
 
 ✨  Done in 40.66s.
 ✨  Done in 40.80s.
@@ -95,10 +95,10 @@ query MyQuery {
     takerTokenAmount
     firstFilledTime
     lastFilledOrCancelledTime
-    filled
+    filledAll
     cancelled
   }
-  limitOrderFilleds(orderBy: blockTimestamp, first: 3) {
+  limitOrders(orderBy: blockTimestamp, first: 3) {
     id
     makerTokenFilledAmount
     takerTokenFilledAmount
@@ -113,3 +113,7 @@ query MyQuery {
   }
 }
 ```
+
+## Published to Graph Explorer on Goerli Testnet
+
+- [Tokenlon Limit Order Subgraph on Goerli Testnet](https://testnet.thegraph.com/explorer/subgraph?id=DSCkswEpNfuaa5gwDWP514QXdtQs7Wh8hKruSN1sV97L)

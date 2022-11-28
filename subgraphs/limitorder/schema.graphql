@@ -1,40 +1,6 @@
-type AllowTransfer @entity(immutable: true) {
-  id: Bytes!
-  spender: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type DepositETH @entity(immutable: true) {
-  id: Bytes!
-  ethBalance: BigInt! # uint256
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type DisallowTransfer @entity(immutable: true) {
-  id: Bytes!
-  spender: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type FactorsUpdated @entity(immutable: true) {
-  id: Bytes!
-  makerFeeFactor: Int! # uint16
-  takerFeeFactor: Int! # uint16
-  profitFeeFactor: Int! # uint16
-  profitCapFactor: Int! # uint16
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
+# For LimitOrder contract
 type LimitOrderFilledByProtocol @entity(immutable: true) {
-  id: Bytes!
+  id: ID!
   orderHash: Bytes! # bytes32
   maker: Bytes! # address
   taker: Bytes! # address
@@ -57,7 +23,7 @@ type LimitOrderFilledByProtocol @entity(immutable: true) {
 }
 
 type LimitOrderFilledByTrader @entity(immutable: true) {
-  id: Bytes!
+  id: ID!
   orderHash: Bytes! # bytes32
   maker: Bytes! # address
   taker: Bytes! # address
@@ -76,41 +42,9 @@ type LimitOrderFilledByTrader @entity(immutable: true) {
 }
 
 type OrderCancelled @entity(immutable: true) {
-  id: Bytes!
+  id: ID!
   orderHash: Bytes! # bytes32
   maker: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type SetFeeCollector @entity(immutable: true) {
-  id: Bytes!
-  newFeeCollector: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type TransferOwnership @entity(immutable: true) {
-  id: Bytes!
-  newOperator: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type UpgradeCoordinator @entity(immutable: true) {
-  id: Bytes!
-  newCoordinator: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type UpgradeSpender @entity(immutable: true) {
-  id: Bytes!
-  newSpender: Bytes! # address
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
@@ -123,20 +57,20 @@ enum OrderTypes {
 
 type Order @entity(immutable: false) {
   id: ID! # orderHash
-  limitOrderFilledId: [String!]! # [LimitOrderFilled!]! @derivedFrom(field: "order")
+  limitOrderFilledId: [String!]! # One-to-many relationship
   maker: Bytes! # address
-  # taker: Bytes! # address # 目前的 event 無法得知 maker 是否有指定 taker
+  # taker: Bytes! # address # The specified taker cannot be known from known event data
   makerToken: Bytes! # address
   takerToken: Bytes! # address
   makerTokenAmount: BigInt! # uint256
   takerTokenAmount: BigInt! # uint256
-  cancelled: Boolean! # 是否被取消
-  filled: Boolean! # 是否已被 Fill 完畢
+  cancelled: Boolean!
+  filledAll: Boolean!
   firstFilledTime: BigInt!
   lastFilledOrCancelledTime: BigInt!
 }
 
-type LimitOrderFilled @entity(immutable: true) {
+type LimitOrder @entity(immutable: true) {
   id: ID!
   orderId: String! # Order! # orderHash
   orderType: OrderTypes!
@@ -150,13 +84,32 @@ type LimitOrderFilled @entity(immutable: true) {
   remainingAmount: BigInt! # uint256
   makerTokenFee: BigInt! # uint256
   takerTokenFee: BigInt! # uint256
-  recipient: Bytes! # address # only byTrader
-  relayer: Bytes! # address # only byProtocol
-  profitRecipient: Bytes! # address # only byProtocol
-  takerTokenProfit: BigInt! # uint256 # only byProtocol
-  takerTokenProfitFee: BigInt! # uint256 # only byProtocol
-  takerTokenProfitBackToMaker: BigInt! # uint256 # only byProtocol
+  recipient: Bytes! # address # Only used by LimitOrderFilledByTrader event
+  relayer: Bytes! # address # Only used by LimitOrderFilledByProtocol event
+  profitRecipient: Bytes! # address # Only used by LimitOrderFilledByProtocol event
+  takerTokenProfit: BigInt! # uint256 # Only used by LimitOrderFilledByProtocol event
+  takerTokenProfitFee: BigInt! # uint256 # Only used by LimitOrderFilledByProtocol event
+  takerTokenProfitBackToMaker: BigInt! # uint256 # Only used by LimitOrderFilledByProtocol event
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+}
+
+# Shared entities
+type TradedToken @entity {
+  id: ID!
+  address: Bytes! # bytes32
+  decimals: Int!
+  startDate: Int!
+  symbol: String!
+  name: String!
+}
+
+type User @entity {
+  id: ID!
+  tradeCount: Int!
+  lastSeen: Int!
+  firstSeen: Int!
+  firstTx: String!
+  firstBlock: BigInt!
 }
