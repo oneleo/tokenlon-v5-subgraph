@@ -1,8 +1,8 @@
-import { BigInt, Bytes, Address } from "@graphprotocol/graph-ts"
+import { BigInt, Bytes, Address } from '@graphprotocol/graph-ts'
 import { log } from '@graphprotocol/graph-ts'
-import { FillOrder as FillOrderEvent } from "../generated/PMM/PMM"
-import { addTradedToken, getUser, getEventID } from "./helper"
-import { FillOrder, FillOrderTotal, TradedToken } from "../generated/schema"
+import { FillOrder as FillOrderEvent } from '../generated/PMM/PMM'
+import { addTradedToken, getUser, getEventID } from './helper'
+import { FillOrder, FillOrderTotal, TradedToken, SwappedTotal as SwappedTotalEntity, User as UserEntity } from '../generated/schema'
 
 export function handleFillOrder(event: FillOrderEvent): void {
   let fillTotalEntity = FillOrderTotal.load('1')
@@ -41,16 +41,27 @@ export function handleFillOrder(event: FillOrderEvent): void {
   entity.gasPrice = event.transaction.gasPrice
   entity.timestamp = event.block.timestamp.toI32()
 
-  log.info(entity.transactionHash, null)
+  log.info('FillOrderEvent transaction hash: {}', [entity.transactionHash])
 
-  // Entities can be written to the store with `.save()`
+    // Test Dependence Event
+    entity.SwappedTotal_total = BigInt.fromI32(0)
+    const swappedTotalEntity = SwappedTotalEntity.load('1')
+    if(swappedTotalEntity !== null) {
+      entity.SwappedTotal_total = swappedTotalEntity.total
+    }
+    entity.User_lastSeen = 0
+    const userEntity = UserEntity.load(event.params.userAddr.toHex())
+    if(userEntity !== null) {
+      entity.User_lastSeen = userEntity.lastSeen
+    }
+
   entity.save()
   fillTotalEntity.save()
 
-  addTradedToken(entity.takerAssetAddr as Address, event.block.timestamp.toI32())
-  addTradedToken(entity.makerAssetAddr as Address, event.block.timestamp.toI32())
+  addTradedToken(entity.takerAssetAddr, event.block.timestamp)
+  addTradedToken(entity.makerAssetAddr, event.block.timestamp)
 
-  let user = getUser(event.params.userAddr, event)
+  const user = getUser(event.params.userAddr, event)!
   user.tradeCount += 1
   user.lastSeen = event.block.timestamp.toI32()
   user.save()
